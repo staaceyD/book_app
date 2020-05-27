@@ -1,4 +1,4 @@
-from tkinter import Button, E, Label, Listbox, Scrollbar, StringVar, Tk, Toplevel, W 
+from tkinter import Button, E, END, Frame, Label, Listbox, N, S, Scrollbar, StringVar, Tk, Toplevel, W 
 from tkinter import ttk
 from tkinter import messagebox
 import sqlite3
@@ -17,7 +17,7 @@ class Bookdb:
         self.connection.close()
     
     def view(self):
-        self.c.execute("SELECT title, author, isbn from books")
+        self.c.execute("SELECT * from books")
         return self.c.fetchall()
     
     def insert(self,title, author, isbn):
@@ -75,28 +75,41 @@ def empty_fields_warning():
     through 'View all records' screen""")
 
 def get_selected_row(event):
-    global selected_tuple
-    index = list_bx.curselection()[0]
-    selected_tuple = list_bx.get(index)
     title_entry.delete(0, "end")
-    title_entry.insert("end", selected_tuple[0])
     author_entry.delete(0, "end")
-    author_entry.insert("end", selected_tuple[1])
     isbn_entry.delete(0, "end")
-    isbn_entry.insert("end", selected_tuple[2])
+    global content
+    print(tree.selection())
+    for nm in tree.selection():
+        content = tree.item(nm, 'values')
+        title_entry.insert(END, content[1])
+        author_entry.insert(END, content[2])
+        isbn_entry.insert(END, content[3])
+    print(content)
+
+def update_record():
+    if not title_text.get() and not author_text.get() and not isbn_text.get():
+        empty_fields_warning()
+    else:
+        db.update(content[0], title_text.get(),author_text.get(), isbn_text.get())
+        title_entry.delete(0,'end')
+        author_entry.delete(0,'end')
+        isbn_entry.delete(0,'end')
+        connection.commit()
+        view_records()
 
 def view_records():
-    list_bx.delete(0, 'end')
+    tree.delete(*tree.get_children())
     for row in db.view():
-        list_bx.insert('end', row)
+        tree.insert("", 'end', values=row)
   
 def add_records():
     if not title_text.get() and not author_text.get() and not isbn_text.get():
         MessageInfoWindow("Required data", "Please add information to all required fields")
     else:
         db.insert(title_text.get(),author_text.get(), isbn_text.get())
-        list_bx.delete(0, 'end')
-        list_bx.insert('end', (title_text.get(),author_text.get(), isbn_text.get()))
+        tree.delete(*tree.get_children())
+        tree.insert("", 'end', values = (title_text.get(),author_text.get(), isbn_text.get()))
         title_entry.delete(0,'end')
         author_entry.delete(0,'end')
         isbn_entry.delete(0,'end')
@@ -107,7 +120,7 @@ def delete_record():
     if not title_text.get() and not author_text.get() and not isbn_text.get():
         empty_fields_warning()
     else:
-        db.delete(selected_tuple[0])
+        db.delete(content[0])
         title_entry.delete(0,'end')
         author_entry.delete(0,'end')
         isbn_entry.delete(0,'end')
@@ -115,21 +128,11 @@ def delete_record():
         view_records()
 
 def clear_screen():
-    list_bx.delete(0, 'end')
+    tree.delete(*tree.get_children())
     title_entry.delete(0,'end')
     author_entry.delete(0,'end')
     isbn_entry.delete(0,'end')
 
-def update_record():
-    if not title_text.get() and not author_text.get() and not isbn_text.get():
-        empty_fields_warning()
-    else:
-        db.update(selected_tuple[0], title_text.get(),author_text.get(), isbn_text.get())
-        title_entry.delete(0,'end')
-        author_entry.delete(0,'end')
-        isbn_entry.delete(0,'end')
-        connection.commit()
-        view_records()
 
 def on_closing():
     MessageExitWindow('Quit', 'Do you want to quit?')
@@ -176,14 +179,26 @@ isbn_entry.grid(row=0, column=5, sticky = W)
 
 
 #window for displaying books with scrollbar
-list_bx = Listbox(root,height=16,font=("Times New Roman", 16),bg="#d5d6b6")
-list_bx.grid(row=3,column=1, columnspan=5,sticky=W + E,pady=40,padx=10)
-list_bx.bind('<<ListboxSelect>>', get_selected_row)
 
-scroll_bar = Scrollbar(root)
+tree= ttk.Treeview(root, column=("column1", "column2", "column3","column4"), show='headings')
+tree.heading("#1", text="ID")
+tree.column("#1", minwidth=0, width=100)
+tree.heading("#2", text="TITLE")
+tree.column("#2", minwidth=0, width=100)
+tree.heading("#3", text="AUTHOR")
+tree.column("#3", minwidth=0, width=100)
+tree.heading("#4", text="ISBN")
+tree.column("#4", minwidth=0, width=100)
+tree.grid(row=3,column=1, columnspan=6,sticky=W + E,pady=40,padx=10)
 
-list_bx.configure(yscrollcommand=scroll_bar.set) # Enables vetical scrolling
-scroll_bar.configure(command=list_bx.yview)
+# tree = Listbox(root,height=16,font=("Times New Roman", 16),bg="#d5d6b6")
+# tree.grid(row=3,column=1, columnspan=5,sticky=W + E,pady=40,padx=10)
+tree.bind('<<TreeviewSelect>>', get_selected_row)
+
+# scroll_bar = Scrollbar(root)
+
+# tree.configure(yscrollcommand=scroll_bar.set) # Enables vetical scrolling
+# scroll_bar.configure(command=tree.yview)
 
 #control buttons
 ttk.Style().configure("TButton", padding=4, font = ("Times New Roman", 14))
