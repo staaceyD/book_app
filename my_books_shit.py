@@ -43,7 +43,7 @@ class Bookdb:
 db = Bookdb()
 
 root_width = 700
-root_height = 550
+root_height = 450
     
 class MessageInfoWindow(Toplevel):
     def __init__(self, title, message):
@@ -190,15 +190,7 @@ tree.column("#3", minwidth=0, width=100)
 tree.heading("#4", text="ISBN")
 tree.column("#4", minwidth=0, width=100)
 tree.grid(row=3,column=1, columnspan=6,sticky=W + E,pady=40,padx=10)
-
-# tree = Listbox(root,height=16,font=("Times New Roman", 16),bg="#d5d6b6")
-# tree.grid(row=3,column=1, columnspan=5,sticky=W + E,pady=40,padx=10)
 tree.bind('<<TreeviewSelect>>', get_selected_row)
-
-# scroll_bar = Scrollbar(root)
-
-# tree.configure(yscrollcommand=scroll_bar.set) # Enables vetical scrolling
-# scroll_bar.configure(command=tree.yview)
 
 #control buttons
 ttk.Style().configure("TButton", padding=4, font = ("Times New Roman", 14))
