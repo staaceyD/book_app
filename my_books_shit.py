@@ -1,4 +1,4 @@
-from tkinter import *
+from tkinter import Button, E, Label, Listbox, Scrollbar, StringVar, Tk, Toplevel, W 
 from tkinter import ttk
 from tkinter import messagebox
 import sqlite3
@@ -62,12 +62,13 @@ class MessageInfoWindow(Toplevel):
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
         Label(self, text=message).grid(row=0, column=0, columnspan=3, pady=(7, 7), padx=(7, 7), sticky="ew")
-        Button(self, text="OK", command=self.destroy, highlightbackground='#3E4149').grid(row=1, column=2, padx=(7, 7))
+        Button(self, text="OK", command=self.destroy, highlightbackground='#3E4149').grid(row=1, column=2, padx=(40))
 
 class MessageExitWindow(MessageInfoWindow):
     def __init__(self, title, message):
-        super().__init__()
-        Button(self, text="Cancel", command=self.destroy, highlightbackground='#3E4149').grid(row=1, column=2)
+        MessageInfoWindow.__init__(self, title, message)
+        Button(self, text="OK", command=root.destroy, highlightbackground='#3E4149').grid(row=1, column=0)
+        Button(self, text="Cancel", command=self.destroy, highlightbackground='#3E4149').grid(row=1, column=2, padx=(40))
     
 def empty_fields_warning():
     MessageInfoWindow(title="Nothing was selected", message="""Please make sure you've selected book
@@ -131,10 +132,8 @@ def update_record():
         view_records()
 
 def on_closing():
-    dd = db
-    if messagebox.askokcancel('Quit', 'Do you want to quit?'):
-        root.destroy()
-        del dd
+    MessageExitWindow('Quit', 'Do you want to quit?')
+    
 
 
 
@@ -204,7 +203,7 @@ view_button.grid(row=15, column = 3)
 clear_button = ttk.Button(root, text="Clear screen", command=clear_screen)
 clear_button.grid(row=15, column = 4)
 
-exit_button = ttk.Button(root, text="Exit App", command=root.destroy)
+exit_button = ttk.Button(root, text="Exit App", command=on_closing)
 exit_button.grid(row=15, column = 5)
 
 
