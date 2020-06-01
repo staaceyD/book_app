@@ -1,4 +1,4 @@
-from tkinter import Button, E, END, Frame, Label, Listbox, N, S, Scrollbar, StringVar, Tk, Toplevel, W 
+from tkinter import Button, E, END, Frame, Label, Listbox, N, OptionMenu, S, Scrollbar, StringVar, Tk, Toplevel, W 
 from tkinter import ttk
 from tkinter import messagebox
 import sqlite3
@@ -38,6 +38,13 @@ class Bookdb:
         self.c.execute(delsql, [id])
         self.connection.commit()
         MessageInfoWindow(title="Book Database", message="The book was deleted")
+
+    def filter(self, selected, search_input):
+        self.c.execute("SELECT * FROM books WHERE (%s) LIKE (?)" % (selected), ('%'+search_input+'%',))
+        return self.c.fetchall()
+
+
+
     
 
 db = Bookdb()
@@ -61,14 +68,14 @@ class MessageInfoWindow(Toplevel):
         self.rowconfigure(1, weight=1)
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
-        Label(self, text=message).grid(row=0, column=0, columnspan=3, pady=(7, 7), padx=(7, 7), sticky="ew")
-        Button(self, text="OK", command=self.destroy, highlightbackground='#3E4149').grid(row=1, column=2, padx=(40))
+        Label(self, text=message).grid(row = 1, column=0, columnspan=3, pady=(7, 7), padx=(7, 7), sticky="ew")
+        Button(self, text="OK", command=self.destroy, highlightbackground='#3E4149').grid(row=2, column=2, padx=40, pady = 5)
 
 class MessageExitWindow(MessageInfoWindow):
     def __init__(self, title, message):
         MessageInfoWindow.__init__(self, title, message)
-        Button(self, text="OK", command=root.destroy, highlightbackground='#3E4149').grid(row=1, column=0)
-        Button(self, text="Cancel", command=self.destroy, highlightbackground='#3E4149').grid(row=1, column=2, padx=(40))
+        Button(self, text="OK", command=root.destroy, highlightbackground='#3E4149').grid(row=2, column=0, pady = 5)
+        Button(self, text="Cancel", command=self.destroy, highlightbackground='#3E4149').grid(row=2, column=2, padx=40, pady = 5)
     
 def empty_fields_warning():
     MessageInfoWindow(title="Nothing was selected", message="""Please make sure you've selected book
@@ -79,7 +86,7 @@ def get_selected_row(event):
     author_entry.delete(0, "end")
     isbn_entry.delete(0, "end")
     global content
-    print(tree.selection())
+    
     for nm in tree.selection():
         content = tree.item(nm, 'values')
         title_entry.insert(END, content[1])
@@ -87,6 +94,20 @@ def get_selected_row(event):
         isbn_entry.insert(END, content[3])
     print(content)
 
+def changed_value(var, indx, mode):
+    global selected
+    selected = option_variable.get().lower()
+    return selected
+
+def search():
+    search_input = search_entry.get()
+    if not search_input:
+        MessageInfoWindow("Search", "Search field is empty")
+    else:
+        tree.delete(*tree.get_children())
+        for r_row in db.filter(selected, search_input):
+            tree.insert("", 'end', values=r_row)
+    
 def update_record():
     if not title_text.get() and not author_text.get() and not isbn_text.get():
         empty_fields_warning()
@@ -128,6 +149,7 @@ def delete_record():
         view_records()
 
 def clear_screen():
+    search_entry.delete(0, 'end')
     tree.delete(*tree.get_children())
     title_entry.delete(0,'end')
     author_entry.delete(0,'end')
@@ -154,28 +176,40 @@ position_right = int(root.winfo_screenwidth()/2 - root_width/2)
 position_down = int(root.winfo_screenheight()/2.5 - root_height/2)
 root.geometry("+{}+{}".format(position_right, position_down))
 
+#search
+
+option_variable = StringVar(root)
+option_variable.trace_add("write", changed_value)
+option_menu = ttk.OptionMenu(root, option_variable,"Title", "Title", "Author", "ISBN")
+option_menu.grid(row = 0, column = 3)
+
+search_entry = ttk.Entry(root)
+search_entry.grid(column = 1, row = 0)
+search_button = ttk.Button(root, text='Search', command=search)
+search_button.grid(column = 2, row = 0)
+
 #Title settings
 title_label = ttk.Label(root, text = "Title  ", background = "#e0b72f", font = ("Times New Roman", 19))
-title_label.grid(row=0, column=0, sticky=W)
+title_label.grid(row = 1, column=0, sticky=W)
 title_text = StringVar()
 title_entry = ttk.Entry(root, width=15, textvariable=title_text)
-title_entry.grid(row=0, column=1, sticky = W)
+title_entry.grid(row = 1, column=1, sticky = W)
 title_entry.focus_set()
 
 #Author settings
 author_label = ttk.Label(root, text = "Author  ",background = "#e0b72f", font = ("Times New Roman", 19))
-author_label.grid(row=0, column=2, sticky=W)
+author_label.grid(row = 1, column=2, sticky=W)
 author_text = StringVar()
 author_entry = ttk.Entry(root, width=15, textvariable=author_text)
-author_entry.grid(row=0, column=3, sticky = W)
+author_entry.grid(row = 1, column=3, sticky = W)
 
 
 #ISBN settings
 isbn_label = ttk.Label(root, text = "ISBN  ",background = "#e0b72f", font = ("Times New Roman", 19))
-isbn_label.grid(row=0, column=4, sticky=W)
+isbn_label.grid(row = 1, column=4, sticky=W)
 isbn_text = StringVar()
 isbn_entry = ttk.Entry(root, width=15, textvariable=isbn_text)
-isbn_entry.grid(row=0, column=5, sticky = W)
+isbn_entry.grid(row = 1, column=5, sticky = W)
 
 
 #window for displaying books with scrollbar
@@ -195,7 +229,7 @@ tree.bind('<<TreeviewSelect>>', get_selected_row)
 #control buttons
 ttk.Style().configure("TButton", padding=4, font = ("Times New Roman", 14))
 add_button = ttk.Button(root, text="Add a Book", command=add_records)
-add_button.grid(row=1, column = 3, sticky = W)
+add_button.grid(row=2, column = 3, sticky = W)
 
 
 modify_button = ttk.Button(root, text="Modify", command=update_record)
@@ -216,3 +250,4 @@ exit_button.grid(row=15, column = 5)
 
 
 root.mainloop()
+
