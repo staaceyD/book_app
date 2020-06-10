@@ -3,15 +3,14 @@ from tkinter import ttk
 from tkinter import messagebox
 import sqlite3
 
-connection = sqlite3.connect('book.db')
-c = connection.cursor()
 
 class Bookdb:
     def __init__(self):
         self.connection = sqlite3.connect('book.db')
-        self.c = connection.cursor()
-        print("You have connetected to db")
-        print(connection)
+        self.c = self.connection.cursor()
+        self.connection.row_factory = sqlite3.Row
+        self.connection.execute("CREATE table if not exists books(id INTEGER PRIMARY KEY, title VARCHAR(255), author VARCHAR(255), isbn int)")
+        self.connection.commit()
 
     def __del__(self):
         self.connection.close()
@@ -43,9 +42,6 @@ class Bookdb:
         self.c.execute("SELECT * FROM books WHERE (%s) LIKE (?)" % (selected), ('%'+search_input+'%',))
         return self.c.fetchall()
 
-
-
-    
 
 db = Bookdb()
 
@@ -85,8 +81,8 @@ def get_selected_row(event):
     title_entry.delete(0, "end")
     author_entry.delete(0, "end")
     isbn_entry.delete(0, "end")
-    global content
     
+    global content
     for nm in tree.selection():
         content = tree.item(nm, 'values')
         title_entry.insert(END, content[1])
@@ -116,7 +112,7 @@ def update_record():
         title_entry.delete(0,'end')
         author_entry.delete(0,'end')
         isbn_entry.delete(0,'end')
-        connection.commit()
+        db.connection.commit()
         view_records()
 
 def view_records():
@@ -130,11 +126,11 @@ def add_records():
     else:
         db.insert(title_text.get(),author_text.get(), isbn_text.get())
         tree.delete(*tree.get_children())
-        tree.insert("", 'end', values = (title_text.get(),author_text.get(), isbn_text.get()))
+        tree.insert("", 'end', values = (db.c.lastrowid, title_text.get(),author_text.get(), isbn_text.get()))
         title_entry.delete(0,'end')
         author_entry.delete(0,'end')
         isbn_entry.delete(0,'end')
-        connection.commit()
+        db.connection.commit()
         
 
 def delete_record():
@@ -145,7 +141,7 @@ def delete_record():
         title_entry.delete(0,'end')
         author_entry.delete(0,'end')
         isbn_entry.delete(0,'end')
-        connection.commit()
+        db.connection.commit()
         view_records()
 
 def clear_screen():
@@ -214,7 +210,7 @@ isbn_entry.grid(row = 1, column=5, sticky = W)
 
 #window for displaying books with scrollbar
 
-tree= ttk.Treeview(root, column=("column1", "column2", "column3","column4"), show='headings')
+tree= ttk.Treeview(root, column=("column1", "column2", "column3", "column4"), show='headings')
 tree.heading("#1", text="ID")
 tree.column("#1", minwidth=0, width=100)
 tree.heading("#2", text="TITLE")
